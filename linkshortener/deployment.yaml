@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linkshortener
+  namespace: linkshortener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linkshortener
+  template:
+    metadata:
+      labels:
+        app: linkshortener
+    spec:
+      containers:
+        - name: linkshortener
+          image: ridhokhalis/linkshortener:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: app-secrets
