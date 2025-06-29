@@ -1,16 +1,15 @@
-echo "Creating namespace..."
-kubectl apply -f namespace.yaml
+ENVIRONMENT=${1:-development}
 
-echo "Installing PostgreSQL..."
-bash helm/install-postgres.sh
+if [ "$ENVIRONMENT" = "staging" ]; then
+    echo "Deploying to staging environment..."
+    kubectl apply -k overlays/staging/
+elif [ "$ENVIRONMENT" = "development" ]; then
+    echo "Deploying to development environment..."
+    kubectl apply -k base/
+else
+    echo "Unknown environment: $ENVIRONMENT"
+    echo "Usage: ./deploy.sh [development|staging]"
+    exit 1
+fi
 
-echo "Installing Kafka..."
-bash helm/install-kafka.sh
-
-echo "Deploying linkshortener..."
-kubectl apply -f linkshortener/
-
-echo "Deploying linkshortener-analytics..."
-kubectl apply -f linkshortener-analytics/
-
-echo "Done"
+echo "Deployment completed for $ENVIRONMENT environment"

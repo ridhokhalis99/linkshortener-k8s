@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: linkshortener
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.7.0
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@localhost:9093"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://localhost:9093"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka.linkshortener.svc.cluster.local:9092"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_LOG_DIRS
+              value: "/tmp/kraft-combined-logs"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_NUM_PARTITIONS
+              value: "1"
+          command:
+            - "/bin/bash"
+            - "-c"
+            - |
+              export CLUSTER_ID="$(/opt/kafka/bin/kafka-storage.sh random-uuid)"
+              /opt/kafka/bin/kafka-storage.sh format -t $CLUSTER_ID -c /opt/kafka/config/kraft/server.properties
+              /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties \
+                --override node.id=1 \
+                --override process.roles=broker,controller \
+                --override controller.quorum.voters=1@localhost:9093 \
+                --override listeners=PLAINTEXT://0.0.0.0:9092,CONTROLLER://localhost:9093 \
+                --override advertised.listeners=PLAINTEXT://kafka.linkshortener.svc.cluster.local:9092 \
+                --override inter.broker.listener.name=PLAINTEXT \
+                --override controller.listener.names=CONTROLLER \
+                --override log.dirs=/tmp/kraft-combined-logs \
+                --override offsets.topic.replication.factor=1 \
+                --override transaction.state.log.replication.factor=1 \
+                --override transaction.state.log.min.isr=1 \
+                --override num.partitions=1
